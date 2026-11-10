@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EE1E7B">
+<title>ドラパン お知らせ受け取り</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#EE1E7B; --pink-soft:#FDE6EF; --pink-ink:#C8105F;
+  --ink:#3A2430; --muted:#9A7385;
+  --bg:#FFEEF5; --surface:#FFFFFF; --sunk:#FFF2F7; --line:#F7CADC;
+  --head:#EE1E7B; --head-2:#FF5FA0; --on-head:#FFFFFF; --on-head-soft:#FFD3E5;
+  --ok:#2E8A55; --ok-bg:#E3F3E9; --warn:#B86E00; --warn-bg:#FBEFD9;
+  --shadow:0 6px 22px rgba(238,30,123,.13);
+  --f-display:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --pink:#FF4D97; --pink-soft:#3A1A29; --pink-ink:#FF7AB0;
+  --ink:#F7E8EF; --muted:#C29AAD;
+  --bg:#1F1018; --surface:#2B1722; --sunk:#36202C; --line:#4D2B3D;
+  --head:#C2186A; --head-2:#E23C86; --on-head:#FFFFFF; --on-head-soft:#FFC2DB;
+  --ok:#6CD394; --ok-bg:#16301F; --warn:#F0B04A; --warn-bg:#33270F;
+  --shadow:0 6px 22px rgba(0,0,0,.45);
+}}
+:root[data-theme="dark"]{
+  --pink:#FF4D97; --pink-soft:#3A1A29; --pink-ink:#FF7AB0;
+  --ink:#F7E8EF; --muted:#C29AAD;
+  --bg:#1F1018; --surface:#2B1722; --sunk:#36202C; --line:#4D2B3D;
+  --head:#C2186A; --head-2:#E23C86; --on-head:#FFFFFF; --on-head-soft:#FFC2DB;
+  --ok:#6CD394; --ok-bg:#16301F; --warn:#F0B04A; --warn-bg:#33270F;
+  --shadow:0 6px 22px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-text-size-adjust:100%;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.wrap{max-width:520px;margin:0 auto;padding:14px 16px 32px}
+.sign{background:linear-gradient(135deg,var(--head),var(--head-2));color:var(--on-head);border-radius:22px;padding:12px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:10px}
+.logo{height:64px;flex:none}
+.logo img{height:100%;width:auto;display:block;filter:drop-shadow(0 2px 3px rgba(120,0,50,.25))}
+.brand{flex:1;min-width:0}
+.brand small{display:block;font-size:11px;color:var(--on-head-soft);letter-spacing:.08em}
+.brand b{font-family:var(--f-display);font-weight:800;font-size:18px}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:20px;padding:16px;margin-top:14px}
+.card h2{margin:0 0 6px;font-family:var(--f-display);font-weight:800;font-size:17px;color:var(--pink-ink)}
+.t{font-size:14px;color:var(--muted)}
+.t b{color:var(--ink)}
+.big{display:block;width:100%;border:0;border-radius:16px;padding:16px;margin:12px 0 8px;font:inherit;font-family:var(--f-display);font-size:19px;font-weight:800;
+  background:linear-gradient(135deg,var(--head),var(--head-2));color:#fff;box-shadow:var(--shadow);cursor:pointer}
+.sub{display:block;width:100%;border:2px solid var(--pink);border-radius:16px;padding:12px;margin-top:12px;font:inherit;font-family:var(--f-display);font-size:16px;font-weight:800;background:var(--surface);color:var(--pink);cursor:pointer}
+.big:disabled,.sub:disabled{opacity:.55}
+.link{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;padding:8px 0 0;cursor:pointer}
+.ok{background:var(--ok-bg);color:var(--ok);border-radius:12px;padding:10px 12px;font-weight:700}
+.warn{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-weight:700}
+.msg{min-height:1.4em;margin-top:8px;font-size:14px;color:var(--muted);text-align:center}
+.hop{display:flex;align-items:flex-end;gap:10px;margin-top:14px;min-height:96px}
+.hop img{height:88px;flex:none;transform-origin:50% 100%}
+.bubble{position:relative;background:var(--surface);border:2px solid var(--pink);border-radius:16px 16px 16px 4px;padding:8px 12px;margin-bottom:26px;font-weight:700;color:var(--pink-ink);font-size:14px;opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
+.bubble.on{opacity:1;transform:none}
+.pyon{animation:pyon 1.1s ease-in-out 2}
+.wiggle{animation:wig .5s ease-in-out 3}
+@keyframes pyon{0%,100%{transform:translateY(0) scaleY(1)}15%{transform:translateY(0) scaleY(.88)}40%{transform:translateY(-26px) scaleY(1.04) rotate(-6deg)}60%{transform:translateY(-26px) rotate(6deg)}85%{transform:translateY(0) scaleY(.92)}}
+@keyframes wig{0%,100%{transform:rotate(0)}30%{transform:rotate(-7deg)}70%{transform:rotate(7deg)}}
+@media (prefers-reduced-motion: reduce){.pyon,.wiggle{animation:none}}
+ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="sign">
+    <div class="logo"><img id="logo" src="icons/riichi.png" alt="リーチのうさぎ"></div>
+    <div class="brand"><small>MY NOTICE</small><b>ドラパン お知らせ受け取り</b></div>
+  </header>
+
+  <section class="card hidden" id="noCfg">
+    <h2>🔒 合言葉が見つからないよ</h2>
+    <div class="t">お知らせ係から届いた<b>メールのリンク</b>から開いてね。一度開けば、次からはホーム画面のアイコンから開けるよ。</div>
+  </section>
+
+  <section class="card hidden" id="noPush">
+    <h2>😢 このブラウザでは受け取れないよ</h2>
+    <div class="t">Androidの<b>Chrome</b>で開いてね。</div>
+  </section>
+
+  <section class="card hidden" id="denied">
+    <h2>🔕 通知が止められています</h2>
+    <div class="t">Chromeの通知がオフになっているみたい。</div>
+    <ol><li>アドレス欄の左のマークを押す</li><li>「権限」または「通知」を押す</li><li>「許可」にして、このページを開き直す</li></ol>
+  </section>
+
+  <section class="card hidden" id="start">
+    <h2>🔔 このスマホで受け取る</h2>
+    <div class="t">ドラパンのアプリからのお知らせが、このスマホに届くようにします。</div>
+    <button class="big" id="subBtn" type="button">🐰 通知を受け取る</button>
+    <div class="t">「通知を許可しますか？」が出たら「許可」を押してね</div>
+  </section>
+
+  <section class="card hidden" id="ready">
+    <div class="ok">✅ このスマホで受け取っています</div>
+    <button class="sub" id="testBtn" type="button">🧪 テストのお知らせを送る</button>
+    <div class="msg" id="msg"></div>
+    <div class="hop"><img id="bunny" src="icons/riichi.png" alt=""><div class="bubble" id="bubble">ぴょん！</div></div>
+    <div class="t">届かなくなったら、下を押してね</div>
+    <button class="link" id="reBtn" type="button">🔁 もう一度「通知を受け取る」をする</button>
+  </section>
+
+  <section class="card">
+    <h2>📱 ホーム画面に置こう</h2>
+    <ol><li>Chromeの右上の「︙」を押す</li><li>「ホーム画面に追加」を押す</li><li>次からは、ホーム画面のピンクのうさぎから開けるよ</li></ol>
+  </section>
+</div>
+
+<script>
+(function(){
+  var STORE = "dorapan-oshirase-cfg";
+  var $ = function(id){ return document.getElementById(id); };
+  var cfg = null, reg = null;
+
+  function readCfg(){
+    var q = new URLSearchParams(location.search);
+    if(q.get("k") && q.get("api")){
+      cfg = { key: q.get("k"), api: q.get("api") };
+      try{ localStorage.setItem(STORE, JSON.stringify(cfg)); }catch(e){}
+      history.replaceState(null, "", location.pathname);
+    }else{
+      try{ cfg = JSON.parse(localStorage.getItem(STORE) || "null"); }catch(e){ cfg = null; }
+    }
+  }
+  function show(id){
+    ["noCfg","noPush","denied","start","ready"].forEach(function(x){ $(x).classList.toggle("hidden", x !== id); });
+  }
+  function say(t){ $("msg").textContent = t; }
+  function api(params){
+    var u = cfg.api + "?k=" + encodeURIComponent(cfg.key);
+    Object.keys(params).forEach(function(k){ u += "&" + k + "=" + encodeURIComponent(params[k]); });
+    return fetch(u, { cache: "no-store" }).then(function(r){ return r.json(); });
+  }
+  function post(body){
+    body.k = cfg.key;
+    return fetch(cfg.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(function(r){ return r.json(); });
+  }
+  function keyBytes(b64){
+    var s = (b64 + "===".slice((b64.length + 3) % 4)).replace(/-/g, "+").replace(/_/g, "/");
+    var raw = atob(s), out = new Uint8Array(raw.length);
+    for(var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function sendCfgToWorker(){
+    var w = reg && (reg.active || reg.waiting || reg.installing);
+    if(w) w.postMessage({ type: "cfg", cfg: cfg });
+  }
+
+  function subscribe(){
+    var btns = [$("subBtn"), $("reBtn")];
+    btns.forEach(function(b){ b.disabled = true; });
+    Notification.requestPermission().then(function(p){
+      if(p !== "granted"){ show("denied"); throw new Error("not granted"); }
+      return api({ a: "pub" });
+    }).then(function(j){
+      if(!j.ok) throw new Error(j.error || "合言葉がちがうみたい");
+      return reg.pushManager.getSubscription().then(function(old){
+        return old ? old.unsubscribe() : null;
+      }).then(function(){
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(j.pub) });
+      });
+    }).then(function(sub){
+      sendCfgToWorker();
+      return post({ a: "sub", sub: sub.toJSON() });
+    }).then(function(j){
+      if(!j.ok) throw new Error(j.error || "登録できませんでした");
+      show("ready"); say("受け取れるようになったよ🎉 テストを送ってみてね");
+      pyon("よろしくね🐰");
+    }).catch(function(e){
+      if(e.message !== "not granted"){ show("start"); alert("うまくいかなかったよ:" + e.message); }
+    }).then(function(){ btns.forEach(function(b){ b.disabled = false; }); });
+  }
+
+  function test(){
+    $("testBtn").disabled = true; say("送っています…");
+    api({ a: "test" }).then(function(j){
+      if(j.ok && j.sent > 0) say("送ったよ！スマホの上にお知らせが出るか見てね🔔");
+      else say("送れませんでした:" + ((j.errors || []).join(" / ") || j.error || "わからないエラー"));
+    }).catch(function(){ say("お知らせ係につながりませんでした。少したってからもう一度ね"); })
+      .then(function(){ $("testBtn").disabled = false; });
+  }
+
+  var hopTimer = null;
+  function pyon(text){
+    var b = $("bunny"), l = $("logo"), bub = $("bubble");
+    bub.textContent = text; bub.classList.add("on");
+    [b, l].forEach(function(x){ x.classList.remove("pyon", "wiggle"); void x.offsetWidth; });
+    b.classList.add("pyon"); l.classList.add("wiggle");
+    clearTimeout(hopTimer);
+    hopTimer = setTimeout(function(){ bub.classList.remove("on"); }, 5000);
+  }
+
+  function start(){
+    readCfg();
+    if(!cfg){ show("noCfg"); return; }
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){ show("noPush"); return; }
+    navigator.serviceWorker.register("sw.js", { scope: "./" }).then(function(r){
+      reg = r;
+      return navigator.serviceWorker.ready;
+    }).then(function(r){
+      reg = r; sendCfgToWorker();
+      if(Notification.permission === "denied"){ show("denied"); return; }
+      return reg.pushManager.getSubscription().then(function(sub){
+        show(sub && Notification.permission === "granted" ? "ready" : "start");
+      });
+    }).catch(function(){ show("noPush"); });
+
+    navigator.serviceWorker.addEventListener("message", function(e){
+      if(e.data && e.data.type === "pyon") pyon("ぴょん！" + ((e.data.msg && e.data.msg.title) || "お知らせが届いたよ"));
+    });
+    $("subBtn").addEventListener("click", subscribe);
+    $("reBtn").addEventListener("click", subscribe);
+    $("testBtn").addEventListener("click", test);
+    $("bunny").addEventListener("click", function(){ pyon("リーチ中だよ🀄"); });
+  }
+  start();
+})();
+</script>
+</body>
+</html>

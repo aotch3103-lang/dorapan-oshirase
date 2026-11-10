@@ -1,0 +1,13 @@
+{
+  "name": "ドラパン お知らせ受け取り",
+  "short_name": "お知らせ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFEEF5",
+  "theme_color": "#EE1E7B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
