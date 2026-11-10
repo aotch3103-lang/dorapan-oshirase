@@ -73,6 +73,20 @@ body{font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-text-size-
 @media (prefers-reduced-motion: reduce){.pyon,.wiggle{animation:none}}
 ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
 .hidden{display:none}
+.view{border-color:var(--pink)}
+.vh{display:flex;align-items:center;gap:12px}
+.vh img{width:62px;height:62px;object-fit:contain;flex:none}
+.vh small{display:block;font-size:12px;color:var(--muted)}
+.vh b{display:block;font-family:var(--f-display);font-weight:800;font-size:17px;line-height:1.4;color:var(--ink)}
+.vbody{white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px;line-height:1.8;background:var(--sunk);border-radius:14px;padding:12px 14px;margin-top:12px}
+.vclose{float:right;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:2px 0 8px 8px;cursor:pointer}
+.hrow{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:2px dashed var(--line);background:none;padding:9px 2px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.hrow:first-of-type{border-top:0}
+.hrow img{width:38px;height:38px;object-fit:contain;flex:none}
+.hrow span{flex:1;min-width:0}
+.hrow b{display:block;font-size:14.5px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hrow small{font-size:12px;color:var(--muted)}
+.hrow.on{background:var(--pink-soft);border-radius:12px}
 </style>
 </head>
 <body>
@@ -81,6 +95,13 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
     <div class="logo"><img id="logo" src="icons/riichi.png" alt="リーチのうさぎ"></div>
     <div class="brand"><small>MY NOTICE</small><b>ドラパン お知らせ受け取り</b></div>
   </header>
+
+  <section class="card view hidden" id="view"></section>
+
+  <section class="card hidden" id="hist">
+    <h2>📬 届いたお知らせ</h2>
+    <div id="histList"></div>
+  </section>
 
   <section class="card hidden" id="noCfg">
     <h2>🔒 合言葉が見つからないよ</h2>
@@ -194,6 +215,50 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
       .then(function(){ $("testBtn").disabled = false; });
   }
 
+  var APPS = {
+    today: { name: "ママのカレンダー", label: "📅 カレンダーを開く" },
+    makanai: { name: "まかないカレンダー", label: "📷 BOYS ROOMを開く" },
+    gama: { name: "めぐのがま口", label: "👛 がま口を開く" },
+    reserve: { name: "貸卓予約", label: "📋 予約表を開く" },
+    test: { name: "テスト", label: "" }
+  };
+  var HIST = [], VIEW_ID = 0;
+  var BASE = new URL("./", location.href).href;
+  function esc(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
+  function when(id){
+    var d = new Date(Number(id)), now = new Date();
+    var hm = ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
+    var same = d.toDateString() === now.toDateString();
+    return (same ? "今日 " : (d.getMonth() + 1) + "/" + d.getDate() + " ") + hm;
+  }
+  function loadHist(){
+    if(!("caches" in window)) return Promise.resolve();
+    return caches.open("dorapan-oshirase-v1").then(function(c){ return c.match(BASE + "__hist"); })
+      .then(function(r){ return r ? r.json() : []; })
+      .then(function(h){ HIST = (h || []).slice().reverse(); renderHist(); })
+      .catch(function(){});
+  }
+  function renderHist(){
+    $("hist").classList.toggle("hidden", !HIST.length);
+    $("histList").innerHTML = HIST.slice(0, 20).map(function(m){
+      return '<button type="button" class="hrow' + (m.id === VIEW_ID ? " on" : "") + '" data-id="' + m.id + '"><img src="icons/' + esc(m.app) + '.png" alt=""><span><b>' + esc(m.title) + '</b><small>' + esc((APPS[m.app] || APPS.test).name) + "・" + when(m.id) + "</small></span></button>";
+    }).join("");
+  }
+  function openMsg(id){
+    var m = HIST.filter(function(x){ return String(x.id) === String(id); })[0];
+    if(!m){ $("view").classList.add("hidden"); return; }
+    VIEW_ID = m.id;
+    var app = APPS[m.app] || APPS.test;
+    $("view").innerHTML = '<button type="button" class="vclose" id="vClose">とじる ✕</button>'
+      + '<div class="vh"><img src="icons/' + esc(m.app) + '.png" alt=""><div><small>' + esc(app.name) + "・" + when(m.id) + "</small><b>" + esc(m.title) + "</b></div></div>"
+      + (m.body ? '<div class="vbody">' + esc(m.body) + "</div>" : "")
+      + (m.url && app.label ? '<a class="big" style="text-align:center;text-decoration:none" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + app.label + "</a>" : "");
+    $("view").classList.remove("hidden");
+    $("vClose").onclick = function(){ VIEW_ID = 0; $("view").classList.add("hidden"); renderHist(); };
+    renderHist();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   var hopTimer = null;
   function pyon(text){
     var b = $("bunny"), l = $("logo"), bub = $("bubble");
@@ -220,8 +285,16 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
     }).catch(function(){ show("noPush"); });
 
     navigator.serviceWorker.addEventListener("message", function(e){
-      if(e.data && e.data.type === "pyon") pyon("ぴょん！" + ((e.data.msg && e.data.msg.title) || "お知らせが届いたよ"));
+      if(!e.data) return;
+      if(e.data.type === "pyon"){ pyon("ぴょん！" + ((e.data.msg && e.data.msg.title) || "お知らせが届いたよ")); loadHist(); }
+      if(e.data.type === "open") loadHist().then(function(){ openMsg(e.data.id); });
     });
+    $("histList").addEventListener("click", function(e){
+      var b = e.target.closest("[data-id]"); if(b) openMsg(b.getAttribute("data-id"));
+    });
+    var want = new URLSearchParams(location.search).get("m");
+    if(want) history.replaceState(null, "", location.pathname);
+    loadHist().then(function(){ if(want) openMsg(want); });
     $("subBtn").addEventListener("click", subscribe);
     $("reBtn").addEventListener("click", subscribe);
     $("testBtn").addEventListener("click", test);

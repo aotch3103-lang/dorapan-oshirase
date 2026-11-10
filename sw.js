@@ -53,23 +53,32 @@ async function onPush() {
       tag: "dorapan-" + m.id,
       silent: !!m.silent,
       vibrate: m.silent ? undefined : [120, 60, 120],
-      data: { url: m.url || BASE }
+      data: { id: m.id }
     });
   }
   await put("last", Math.max.apply(null, msgs.map(function (m) { return m.id; })));
+  // 届いたお知らせを、アプリの中で見返せるようにしまっておく(30こまで)
+  const hist = (await get("hist")) || [];
+  msgs.forEach(function (m) { if (!hist.some(function (h) { return h.id === m.id; })) hist.push(m); });
+  hist.sort(function (x, y) { return x.id - y.id; });
+  await put("hist", hist.slice(-30));
   // ページを開いていたら、うさぎを跳ねさせる
   const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   list.forEach(function (c) { c.postMessage({ type: "pyon", msg: msgs[msgs.length - 1] }); });
 }
 
-// お知らせを押したとき
+// お知らせを押したとき:お知らせアプリを開いて、そのお知らせを大きく見せる
 self.addEventListener("notificationclick", function (e) {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || BASE;
+  const id = (e.notification.data && e.notification.data.id) || "";
+  const url = BASE + (id ? "?m=" + id : "");
   e.waitUntil((async function () {
     const list = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const c of list) {
-      if (c.url.split("?")[0] === url.split("?")[0] && "focus" in c) return c.focus();
+      if (c.url.indexOf(BASE) === 0 && "focus" in c) {
+        c.postMessage({ type: "open", id: id });
+        return c.focus();
+      }
     }
     return self.clients.openWindow(url);
   })());
