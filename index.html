@@ -87,6 +87,15 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
 .hrow b{display:block;font-size:14.5px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hrow small{font-size:12px;color:var(--muted)}
 .hrow.on{background:var(--pink-soft);border-radius:12px}
+.hrow .dot{width:10px;height:10px;border-radius:50%;background:var(--pink);flex:none}
+.hrow.read{opacity:.72}
+.hhead{display:flex;align-items:center;gap:8px}
+.hhead h2{flex:1;margin:0}
+.hhead .link{padding:0;white-space:nowrap}
+.cnt{display:inline-block;min-width:24px;text-align:center;background:var(--pink);color:#fff;border-radius:999px;font-size:13px;padding:1px 7px;vertical-align:2px}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:10px 0 4px}
+.fold{display:block;width:100%;border:0;background:none;padding:0;font:inherit;font-family:var(--f-display);font-weight:800;font-size:16px;color:var(--pink-ink);text-align:left;cursor:pointer}
+#newList{margin-top:8px}#readList{margin-top:8px}
 </style>
 </head>
 <body>
@@ -98,9 +107,15 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
 
   <section class="card view hidden" id="view"></section>
 
-  <section class="card hidden" id="hist">
-    <h2>📬 届いたお知らせ</h2>
-    <div id="histList"></div>
+  <section class="card hidden" id="newCard">
+    <div class="hhead"><h2>📬 新しいお知らせ <span class="cnt" id="newN"></span></h2><button type="button" class="link" id="allRead">✅ ぜんぶ見た</button></div>
+    <div id="newList"></div>
+  </section>
+
+  <section class="card hidden" id="readCard">
+    <button type="button" class="fold" id="readToggle"></button>
+    <div id="readList" class="hidden"></div>
+    <div class="t" style="margin-top:6px">見たお知らせは、3日たつと自動で消えるよ</div>
   </section>
 
   <section class="card hidden" id="noCfg">
@@ -222,7 +237,13 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
     reserve: { name: "貸卓予約", label: "📋 予約表を開く" },
     test: { name: "テスト", label: "" }
   };
-  var HIST = [], VIEW_ID = 0;
+  var HIST = [], VIEW_ID = 0, SHOW_READ = false;
+  var READ_KEY = "dorapan-oshirase-read", KEEP_DAYS = 3;
+  var READ = {};
+  try{ READ = JSON.parse(localStorage.getItem(READ_KEY) || "{}") || {}; }catch(e){ READ = {}; }
+  function saveRead(){ try{ localStorage.setItem(READ_KEY, JSON.stringify(READ)); }catch(e){} }
+  function markRead(id){ if(!READ[id]){ READ[id] = Date.now(); saveRead(); } }
+  function iconOf(app){ return APPS[app] && app !== "test" ? app : "riichi"; }
   var BASE = new URL("./", location.href).href;
   function esc(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
   function when(id){
@@ -235,22 +256,41 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
     if(!("caches" in window)) return Promise.resolve();
     return caches.open("dorapan-oshirase-v1").then(function(c){ return c.match(BASE + "__hist"); })
       .then(function(r){ return r ? r.json() : []; })
-      .then(function(h){ HIST = (h || []).slice().reverse(); renderHist(); })
+      .then(function(h){ HIST = (h || []).slice().reverse(); return prune(); })
+      .then(renderHist)
       .catch(function(){});
   }
+  function prune(){
+    var limit = Date.now() - KEEP_DAYS * 86400000, before = HIST.length;
+    HIST = HIST.filter(function(m){ return !(READ[m.id] && READ[m.id] < limit); });
+    Object.keys(READ).forEach(function(id){ if(READ[id] < limit) delete READ[id]; });
+    saveRead();
+    if(HIST.length === before) return Promise.resolve();
+    return caches.open("dorapan-oshirase-v1").then(function(c){ return c.put(BASE + "__hist", new Response(JSON.stringify(HIST.slice().reverse()))); }).catch(function(){});
+  }
+  function row(m, isRead){
+    return '<button type="button" class="hrow' + (isRead ? " read" : "") + (m.id === VIEW_ID ? " on" : "") + '" data-id="' + m.id + '">' + (isRead ? "" : '<i class="dot"></i>') + '<img src="icons/' + iconOf(m.app) + '.png" alt=""><span><b>' + esc(m.title) + '</b><small>' + esc((APPS[m.app] || APPS.test).name) + "・" + when(m.id) + "</small></span></button>";
+  }
   function renderHist(){
-    $("hist").classList.toggle("hidden", !HIST.length);
-    $("histList").innerHTML = HIST.slice(0, 20).map(function(m){
-      return '<button type="button" class="hrow' + (m.id === VIEW_ID ? " on" : "") + '" data-id="' + m.id + '"><img src="icons/' + esc(m.app) + '.png" alt=""><span><b>' + esc(m.title) + '</b><small>' + esc((APPS[m.app] || APPS.test).name) + "・" + when(m.id) + "</small></span></button>";
-    }).join("");
+    var fresh = HIST.filter(function(m){ return !READ[m.id]; }), seen = HIST.filter(function(m){ return READ[m.id]; });
+    $("newCard").classList.toggle("hidden", !HIST.length);
+    $("newN").textContent = fresh.length || "";
+    $("newN").style.display = fresh.length ? "" : "none";
+    $("allRead").style.display = fresh.length ? "" : "none";
+    $("newList").innerHTML = fresh.length ? fresh.slice(0, 20).map(function(m){ return row(m, false); }).join("") : '<div class="empty">新しいお知らせはないよ🐰</div>';
+    $("readCard").classList.toggle("hidden", !seen.length);
+    $("readToggle").textContent = "📂 見たお知らせ（" + seen.length + "） " + (SHOW_READ ? "▾" : "▸");
+    $("readList").classList.toggle("hidden", !SHOW_READ);
+    $("readList").innerHTML = SHOW_READ ? seen.slice(0, 20).map(function(m){ return row(m, true); }).join("") : "";
   }
   function openMsg(id){
     var m = HIST.filter(function(x){ return String(x.id) === String(id); })[0];
     if(!m){ $("view").classList.add("hidden"); return; }
     VIEW_ID = m.id;
+    markRead(m.id);
     var app = APPS[m.app] || APPS.test;
     $("view").innerHTML = '<button type="button" class="vclose" id="vClose">とじる ✕</button>'
-      + '<div class="vh"><img src="icons/' + esc(m.app) + '.png" alt=""><div><small>' + esc(app.name) + "・" + when(m.id) + "</small><b>" + esc(m.title) + "</b></div></div>"
+      + '<div class="vh"><img src="icons/' + iconOf(m.app) + '.png" alt=""><div><small>' + esc(app.name) + "・" + when(m.id) + "</small><b>" + esc(m.title) + "</b></div></div>"
       + (m.body ? '<div class="vbody">' + esc(m.body) + "</div>" : "")
       + (m.url && app.label ? '<a class="big" style="text-align:center;text-decoration:none" href="' + esc(m.url) + '" target="_blank" rel="noopener">' + app.label + "</a>" : "");
     $("view").classList.remove("hidden");
@@ -289,9 +329,13 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
       if(e.data.type === "pyon"){ pyon("ぴょん！" + ((e.data.msg && e.data.msg.title) || "お知らせが届いたよ")); loadHist(); }
       if(e.data.type === "open") loadHist().then(function(){ openMsg(e.data.id); });
     });
-    $("histList").addEventListener("click", function(e){
-      var b = e.target.closest("[data-id]"); if(b) openMsg(b.getAttribute("data-id"));
+    ["newList", "readList"].forEach(function(id){
+      $(id).addEventListener("click", function(e){
+        var b = e.target.closest("[data-id]"); if(b) openMsg(b.getAttribute("data-id"));
+      });
     });
+    $("readToggle").addEventListener("click", function(){ SHOW_READ = !SHOW_READ; renderHist(); });
+    $("allRead").addEventListener("click", function(){ HIST.forEach(function(m){ markRead(m.id); }); renderHist(); });
     var want = new URLSearchParams(location.search).get("m");
     if(want) history.replaceState(null, "", location.pathname);
     loadHist().then(function(){ if(want) openMsg(want); });

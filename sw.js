@@ -2,7 +2,7 @@
    Googleの郵便屋さんから「合図」が来たら、お知らせ係(Apps Script)に中身を取りに行って、通知を出します。
    このフォルダ(dorapan-oshirase)の中でだけ働きます。ほかのページには関係ありません。 */
 
-const STORE = "dorapan-oshirase-v1";
+const STORE = "dorapan-oshirase-v1"; // 11/11 版:テストのうさぎを直した
 const BASE = self.registration.scope; // https://〜/dorapan-oshirase/
 
 self.addEventListener("install", function () { self.skipWaiting(); });
@@ -26,7 +26,7 @@ async function get(name) {
 self.addEventListener("push", function (e) { e.waitUntil(onPush()); });
 
 async function onPush() {
-  let msgs = [];
+  let msgs = [], fetchedOk = false;
   try {
     const cfg = await get("cfg");
     const last = (await get("last")) || 0;
@@ -34,9 +34,22 @@ async function onPush() {
       const r = await fetch(cfg.api + "?a=msg&k=" + encodeURIComponent(cfg.key) + "&since=" + last, { cache: "no-store" });
       const j = await r.json();
       msgs = (j && j.msgs) || [];
+      fetchedOk = !!(j && j.ok);
     }
   } catch (err) { /* 取りに行けなかったときは、下の「届いたよ」だけ出す */ }
 
+  if (!msgs.length && fetchedOk) {
+    // 新しいものがなかったとき(ノックが重なったとき):いちばん新しいお知らせを、音なしで出し直すだけ
+    const hist = (await get("hist")) || [];
+    const m = hist[hist.length - 1];
+    if (m) {
+      await self.registration.showNotification(m.title, {
+        body: m.body, icon: BASE + "icons/" + (["today", "makanai", "gama", "reserve"].indexOf(m.app) >= 0 ? m.app : "riichi") + ".png",
+        badge: BASE + "icons/badge.png", tag: "dorapan-" + m.id, silent: true, data: { id: m.id }
+      });
+      return;
+    }
+  }
   if (!msgs.length) {
     await self.registration.showNotification("🐰 ドラパン お知らせ", {
       body: "お知らせが届いたよ。開いて見てね",
@@ -48,7 +61,7 @@ async function onPush() {
   for (const m of msgs) {
     await self.registration.showNotification(m.title, {
       body: m.body,
-      icon: BASE + "icons/" + m.app + ".png",
+      icon: BASE + "icons/" + (["today", "makanai", "gama", "reserve"].indexOf(m.app) >= 0 ? m.app : "riichi") + ".png",
       badge: BASE + "icons/badge.png",
       tag: "dorapan-" + m.id,
       silent: !!m.silent,
