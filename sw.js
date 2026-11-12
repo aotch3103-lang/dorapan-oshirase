@@ -2,8 +2,12 @@
    Googleの郵便屋さんから「合図」が来たら、お知らせ係(Apps Script)に中身を取りに行って、通知を出します。
    このフォルダ(dorapan-oshirase)の中でだけ働きます。ほかのページには関係ありません。 */
 
-const STORE = "dorapan-oshirase-v1"; // 11/11 版:テストのうさぎを直した
+const STORE = "dorapan-oshirase-v1"; // 11/12 版:船倉さんの包装依頼を追加(この名前は変えないでね)
 const BASE = self.registration.scope; // https://〜/dorapan-oshirase/
+
+// アプリの名前 → うさぎの絵の名前(icons フォルダの「名前.png」)
+const ICONS = { today: "today", makanai: "makanai", gama: "gama", reserve: "reserve", housou: "funakura" };
+function iconOf(app) { return BASE + "icons/" + (ICONS[app] || "riichi") + ".png"; }
 
 self.addEventListener("install", function () { self.skipWaiting(); });
 self.addEventListener("activate", function (e) { e.waitUntil(self.clients.claim()); });
@@ -44,7 +48,7 @@ async function onPush() {
     const m = hist[hist.length - 1];
     if (m) {
       await self.registration.showNotification(m.title, {
-        body: m.body, icon: BASE + "icons/" + (["today", "makanai", "gama", "reserve"].indexOf(m.app) >= 0 ? m.app : "riichi") + ".png",
+        body: m.body, icon: iconOf(m.app),
         badge: BASE + "icons/badge.png", tag: "dorapan-" + m.id, silent: true, data: { id: m.id }
       });
       return;
@@ -61,7 +65,7 @@ async function onPush() {
   for (const m of msgs) {
     await self.registration.showNotification(m.title, {
       body: m.body,
-      icon: BASE + "icons/" + (["today", "makanai", "gama", "reserve"].indexOf(m.app) >= 0 ? m.app : "riichi") + ".png",
+      icon: iconOf(m.app),
       badge: BASE + "icons/badge.png",
       tag: "dorapan-" + m.id,
       silent: !!m.silent,
