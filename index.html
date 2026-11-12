@@ -235,6 +235,7 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
     makanai: { name: "まかないカレンダー", label: "📷 BOYS ROOMを開く" },
     gama: { name: "めぐのがま口", label: "👛 がま口を開く" },
     reserve: { name: "貸卓予約", label: "📋 予約表を開く" },
+    housou: { name: "船倉さん 包装依頼", label: "📦 包装依頼を開く", icon: "funakura" },
     test: { name: "テスト", label: "" }
   };
   var HIST = [], VIEW_ID = 0, SHOW_READ = false;
@@ -243,7 +244,7 @@ ol{margin:6px 0 0;padding-left:1.3em;font-size:14px;color:var(--muted)}
   try{ READ = JSON.parse(localStorage.getItem(READ_KEY) || "{}") || {}; }catch(e){ READ = {}; }
   function saveRead(){ try{ localStorage.setItem(READ_KEY, JSON.stringify(READ)); }catch(e){} }
   function markRead(id){ if(!READ[id]){ READ[id] = Date.now(); saveRead(); } }
-  function iconOf(app){ return APPS[app] && app !== "test" ? app : "riichi"; }
+  function iconOf(app){ return APPS[app] && app !== "test" ? (APPS[app].icon || app) : "riichi"; }
   var BASE = new URL("./", location.href).href;
   function esc(t){ return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]; }); }
   function when(id){
