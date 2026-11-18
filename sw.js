@@ -2,11 +2,11 @@
    Googleの郵便屋さんから「合図」が来たら、お知らせ係(Apps Script)に中身を取りに行って、通知を出します。
    このフォルダ(dorapan-oshirase)の中でだけ働きます。ほかのページには関係ありません。 */
 
-const STORE = "dorapan-oshirase-v1"; // 11/14 版:「受け取ったよ✅」の返事を追加(この名前は変えないでね)
+const STORE = "dorapan-oshirase-v1"; // 11/18 版:BOYS ROOMのシフト希望を追加(この名前は変えないでね)
 const BASE = self.registration.scope; // https://〜/dorapan-oshirase/
 
 // アプリの名前 → うさぎの絵の名前(icons フォルダの「名前.png」)
-const ICONS = { today: "today", makanai: "makanai", gama: "gama", reserve: "reserve", housou: "funakura" };
+const ICONS = { today: "today", makanai: "makanai", gama: "gama", reserve: "reserve", housou: "funakura", boys: "boys" };
 function iconOf(app) { return BASE + "icons/" + (ICONS[app] || "riichi") + ".png"; }
 
 self.addEventListener("install", function () { self.skipWaiting(); });
